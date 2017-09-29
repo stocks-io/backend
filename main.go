@@ -22,13 +22,13 @@ func setupDB() {
 	cmd = `
     CREATE TABLE IF NOT EXISTS users
     (
-      id              int unsigned NOT NULL auto_increment,
-      first_name				varchar(255) NOT NULL,
-      last_name				varchar(255) NOT NULL,
+      id              	int unsigned NOT NULL auto_increment,
+      first_name		varchar(255) NOT NULL,
+      last_name			varchar(255) NOT NULL,
       email         	varchar(255) NOT NULL,
-      password            varchar(255) NOT NULL,
-      added           datetime NOT NULL,
-      PRIMARY KEY     (id)
+      password         	varchar(255) NOT NULL,
+      added           	datetime NOT NULL,
+      PRIMARY KEY    	(id)
     );
     `
 	stmt, err := db.Prepare(cmd)
@@ -38,10 +38,10 @@ func setupDB() {
 	cmd = `
     CREATE TABLE IF NOT EXISTS portfolio
     (
-      id              int unsigned NOT NULL auto_increment,
-      user_id          int unsigned NOT NULL,
+      id              	int unsigned NOT NULL auto_increment,
+      user_id          	int unsigned NOT NULL,
       cash				FLOAT(8),
-      PRIMARY KEY     (id)
+      PRIMARY KEY     	(id)
     );
     `
 	stmt, err = db.Prepare(cmd)
@@ -51,12 +51,12 @@ func setupDB() {
 	cmd = `
     CREATE TABLE IF NOT EXISTS positions
     (
-      id              int unsigned NOT NULL auto_increment,
-      user_id          int unsigned NOT NULL,
-      symbol				varchar(32),
+      id              	int unsigned NOT NULL auto_increment,
+      user_id          	int unsigned NOT NULL,
+      symbol			varchar(32),
       units				int unsigned NOT NULL,
       buy_price			FLOAT(8),
-      PRIMARY KEY     (id)
+      PRIMARY KEY     	(id)
     );
     `
 	stmt, err = db.Prepare(cmd)
@@ -122,5 +122,5 @@ func main() {
 		})
 	}
 
-	app.Run() // listen and serve on 0.0.0.0:8080
+	app.Run(":8080")
 }
