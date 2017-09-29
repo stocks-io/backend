@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
+	finance "github.com/FlashBoys/go-finance"
 	"github.com/gin-gonic/gin"
 )
 
@@ -31,35 +33,33 @@ func main() {
 	stocks := app.Group("/stocks")
 	{
 		stocks.GET("/:symbol", func(c *gin.Context) {
+			sym := strings.ToUpper(c.Param("symbol"))
+			q, _ := finance.GetQuote(sym)
 			c.JSON(200, gin.H{
-				"page": fmt.Sprintf("/stocks/%s", c.Param("symbol")),
+				"page":  fmt.Sprintf("/stocks/%s", sym),
+				"quote": q,
 			})
 		})
 	}
 
 	portfolio := app.Group("/portfolio")
 	{
-		portfolio.GET("/buy", func(c *gin.Context) {
+		portfolio.POST("/buy", func(c *gin.Context) {
 			c.JSON(200, gin.H{
 				"page": fmt.Sprintf("/buy"),
 			})
 		})
-		portfolio.GET("/sell", func(c *gin.Context) {
+		portfolio.POST("/sell", func(c *gin.Context) {
 			c.JSON(200, gin.H{
 				"page": fmt.Sprintf("/sell"),
 			})
 		})
-		portfolio.GET("/update", func(c *gin.Context) {
+		portfolio.GET("/update/:userID", func(c *gin.Context) {
 			c.JSON(200, gin.H{
-				"page": fmt.Sprintf("/update"),
+				"page": fmt.Sprintf("/update/%s", c.Param("userID")),
 			})
 		})
 	}
 
-	app.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
 	app.Run() // listen and serve on 0.0.0.0:8080
 }
