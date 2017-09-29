@@ -19,6 +19,9 @@ func checkErr(err error) {
 
 func setupDB() {
 	var cmd string
+	stmt, err := db.Prepare("CREATE DATABASE IF NOT EXISTS stocks;")
+	_, err = stmt.Exec()
+	checkErr(err)
 	cmd = `
     CREATE TABLE IF NOT EXISTS users
     (
@@ -31,7 +34,7 @@ func setupDB() {
       PRIMARY KEY    	(id)
     );
     `
-	stmt, err := db.Prepare(cmd)
+	stmt, err = db.Prepare(cmd)
 	checkErr(err)
 	_, err = stmt.Exec()
 	checkErr(err)
