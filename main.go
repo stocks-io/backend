@@ -2,15 +2,9 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
-	"os/exec"
-	"strings"
-	"time"
 
-	finance "github.com/FlashBoys/go-finance"
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -102,92 +96,16 @@ func setupDB() {
 	checkErr(err)
 }
 
+var app *gin.Engine
 var db *sql.DB
 var err error
 
 func main() {
-	app := gin.Default()
+	app = gin.Default()
 	setupDB()
-	users := app.Group("/users")
-	{
-		users.POST("/login", func(c *gin.Context) {
-			var id int
-			var req loginRequest
-			c.BindWith(&req, binding.Form)
-			if !userExists(req.Username) {
-				c.JSON(401, gin.H{"message": "user does not exist"})
-				return
-			}
-			rows, err := db.Query("SELECT id FROM userinfo WHERE username=?", req.Username)
-			checkErr(err)
-			rows.Next()
-			err = rows.Scan(&id)
-			checkErr(err)
-			token, err := exec.Command("uuidgen").Output()
-			token = token[0 : len(token)-1]
-			checkErr(err)
-			now := time.Now().Unix()
-			then := time.Now().Add(time.Hour * 24).Unix()
-			stmt, err := db.Prepare("INSERT sessions SET user_id=?, token=?, added=?, expires=?")
-			checkErr(err)
-			_, err = stmt.Exec(id, token, now, then)
-			checkErr(err)
-			fmt.Printf("%s\n", token)
-			c.JSON(200, gin.H{
-				"userId":  id,
-				"token":   fmt.Sprintf("%s", token),
-				"expires": then,
-			})
-		})
-		users.POST("/logout", func(c *gin.Context) {
-			var req logoutRequest
-			c.BindWith(&req, binding.Form)
-			var exists bool
-			err := db.QueryRow("SELECT IF(COUNT(*),'true','false') FROM sessions WHERE token=?", req.Token).Scan(&exists)
-			checkErr(err)
-			if !exists {
-				c.JSON(401, gin.H{
-					"message": "token does not exist",
-				})
-				return
-			}
-			_, err = db.Exec("DELETE FROM sessions WHERE token=?", req.Token)
-			checkErr(err)
-			c.JSON(200, gin.H{
-				"message": "successfully logged out",
-			})
-		})
-		users.GET("/register", func(c *gin.Context) {
-			c.JSON(200, gin.H{
-				"page": "register",
-			})
-		})
-	}
-
-	stocks := app.Group("/stock")
-	{
-		stocks.GET("/:symbol", func(c *gin.Context) {
-			sym := strings.ToUpper(c.Param("symbol"))
-			q, _ := finance.GetQuote(sym)
-			c.JSON(200, q)
-		})
-	}
-
-	portfolio := app.Group("/portfolio")
-	{
-		portfolio.POST("/buy", func(c *gin.Context) {
-			c.JSON(200, gin.H{"user": "buy"})
-
-		})
-		portfolio.POST("/sell", func(c *gin.Context) {
-			c.JSON(200, gin.H{"user": "sell"})
-		})
-		portfolio.GET("/update/:userID", func(c *gin.Context) {
-			c.JSON(200, gin.H{
-				"page": fmt.Sprintf("/update/%s", c.Param("userID")),
-			})
-		})
-	}
+	setupUserRoutes()
+	setupStockRoutes()
+	setupPortfolioRoutes()
 
 	app.Run(":8080")
 }
