@@ -35,6 +35,12 @@ func checkErr(err error) {
 	}
 }
 
+func checkFatalErr(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func userExists(username string) bool {
 	var exists bool
 	err := db.QueryRow("SELECT IF(COUNT(*),'true','false') FROM userinfo WHERE username=?", username).Scan(&exists)
@@ -43,8 +49,13 @@ func userExists(username string) bool {
 }
 
 func setupDB() {
-	var cmd string
-	cmd = `
+	db, err = sql.Open("mysql", "root@/")
+	checkFatalErr(err)
+	_, err := db.Exec("CREATE DATABASE IF NOT EXISTS stocks")
+	checkFatalErr(err)
+	db, err = sql.Open("mysql", "root@/stocks")
+	checkFatalErr(err)
+	cmd := `
     CREATE TABLE IF NOT EXISTS userinfo
     (
       id              	int unsigned NOT NULL auto_increment,
@@ -111,10 +122,6 @@ var err error
 
 func main() {
 	app := gin.Default()
-	db, err = sql.Open("mysql", "root@/stocks")
-	if err != nil {
-		log.Fatal("Failed to load MySQL Database: %s", err.Error())
-	}
 	setupDB()
 	users := app.Group("/users")
 	{
