@@ -25,6 +25,10 @@ type loginRequest struct {
 	Password string `form:"password" json:"password" binding:"required"`
 }
 
+type logoutRequest struct {
+	Token string `form:"token" json:"token" binding:"required"`
+}
+
 func checkErr(err error) {
 	if err != nil {
 		panic(err)
@@ -128,6 +132,7 @@ func main() {
 			err = rows.Scan(&id)
 			checkErr(err)
 			token, err := exec.Command("uuidgen").Output()
+			token = token[0 : len(token)-1]
 			checkErr(err)
 			now := time.Now().Unix()
 			then := time.Now().Add(time.Hour * 24).Unix()
@@ -135,15 +140,29 @@ func main() {
 			checkErr(err)
 			_, err = stmt.Exec(id, token, now, then)
 			checkErr(err)
+			fmt.Printf("%s\n", token)
 			c.JSON(200, gin.H{
 				"userId":  id,
-				"token":   token,
+				"token":   fmt.Sprintf("%s", token),
 				"expires": then,
 			})
 		})
-		users.GET("/logout", func(c *gin.Context) {
+		users.POST("/logout", func(c *gin.Context) {
+			var req logoutRequest
+			c.BindWith(&req, binding.Form)
+			var exists bool
+			err := db.QueryRow("SELECT IF(COUNT(*),'true','false') FROM sessions WHERE token=?", req.Token).Scan(&exists)
+			checkErr(err)
+			if !exists {
+				c.JSON(401, gin.H{
+					"message": "token does not exist",
+				})
+				return
+			}
+			_, err = db.Exec("DELETE FROM sessions WHERE token=?", req.Token)
+			checkErr(err)
 			c.JSON(200, gin.H{
-				"page": "logout",
+				"message": "successfully logged out",
 			})
 		})
 		users.GET("/register", func(c *gin.Context) {
