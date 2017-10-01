@@ -15,7 +15,6 @@ func main() {
 	app = gin.Default()
 	setupDB()
 	setupUserRoutes()
-	setupStockRoutes()
 	setupPortfolioRoutes()
 
 	app.Run(":8080")

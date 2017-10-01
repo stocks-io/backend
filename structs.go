@@ -1,7 +1,7 @@
 package main
 
-type buyRequest struct {
-	UserId int    `form:"userId" json:"userId" binding:"required"`
+type orderRequest struct {
+	Token  string `form:"token" json:"token" binding:"required"`
 	Units  int    `form:"units" json:"units" binding:"required"`
 	Symbol string `form:"symbol" json:"symbol" binding:"required"`
 }

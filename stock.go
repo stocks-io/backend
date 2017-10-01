@@ -4,16 +4,15 @@ import (
 	"strings"
 
 	finance "github.com/FlashBoys/go-finance"
-	"github.com/gin-gonic/gin"
 )
 
-func setupStockRoutes() {
-	stocks := app.Group("/stock")
-	{
-		stocks.GET("/:symbol", func(c *gin.Context) {
-			sym := strings.ToUpper(c.Param("symbol"))
-			q, _ := finance.GetQuote(sym)
-			c.JSON(200, q)
-		})
+func getStockPrice(symbol string) (float64, error) {
+	sym := strings.ToUpper(symbol)
+	q, err := finance.GetQuote(sym)
+	checkErr(err)
+	if err != nil {
+		return -1, err
 	}
+	val, _ := q.LastTradePrice.Float64()
+	return val, nil
 }
