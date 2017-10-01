@@ -71,6 +71,23 @@ func setupDB() {
 	checkErr(err)
 }
 
+func getUserId(username string) (int, error) {
+	rows, err := db.Query("SELECT id FROM userinfo WHERE username=?", username)
+	checkErr(err)
+	defer rows.Close()
+	var id int
+	rows.Next()
+	err = rows.Scan(&id)
+	return id, err
+}
+
+func emailExists(email string) bool {
+	var exists bool
+	err := db.QueryRow("SELECT IF(COUNT(*),'true','false') FROM userinfo WHERE email=?", email).Scan(&exists)
+	checkErr(err)
+	return exists
+}
+
 func userExists(username string) bool {
 	var exists bool
 	err := db.QueryRow("SELECT IF(COUNT(*),'true','false') FROM userinfo WHERE username=?", username).Scan(&exists)

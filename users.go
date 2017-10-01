@@ -13,17 +13,13 @@ func setupUserRoutes() {
 	users := app.Group("/users")
 	{
 		users.POST("/login", func(c *gin.Context) {
-			var id int
 			var req loginRequest
 			c.BindWith(&req, binding.Form)
 			if !userExists(req.Username) {
 				c.JSON(401, gin.H{"message": "user does not exist"})
 				return
 			}
-			rows, err := db.Query("SELECT id FROM userinfo WHERE username=?", req.Username)
-			checkErr(err)
-			rows.Next()
-			err = rows.Scan(&id)
+			id, err := getUserId(req.Username)
 			checkErr(err)
 			token, err := exec.Command("uuidgen").Output()
 			token = token[0 : len(token)-1]
@@ -59,9 +55,34 @@ func setupUserRoutes() {
 				"message": "successfully logged out",
 			})
 		})
-		users.GET("/register", func(c *gin.Context) {
+		users.POST("/register", func(c *gin.Context) {
+			var req registerRequest
+			c.BindWith(&req, binding.Form)
+			if userExists(req.Username) {
+				c.JSON(401, gin.H{
+					"message": "username already taken",
+				})
+				return
+			}
+			if emailExists(req.Email) {
+				c.JSON(401, gin.H{
+					"message": "email already taken",
+				})
+				return
+			}
+			now := time.Now().Unix()
+			stmt, err := db.Prepare("INSERT userinfo SET first_name=?, last_name=?, username=?, email=?, password=?, added=?")
+			checkErr(err)
+			_, err = stmt.Exec(req.FirstName, req.LastName, req.Username, req.Email, req.Password, now)
+			checkErr(err)
+			id, err := getUserId(req.Username)
+			checkErr(err)
+			stmt, err = db.Prepare("INSERT portfolio SET user_id=?, cash=?")
+			checkErr(err)
+			_, err = stmt.Exec(id, 10000)
+			checkErr(err)
 			c.JSON(200, gin.H{
-				"page": "register",
+				"page": "successfully registered",
 			})
 		})
 	}
