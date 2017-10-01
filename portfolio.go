@@ -39,6 +39,7 @@ func setupPortfolioRoutes() {
 			err = setCash(userId, cash)
 			checkErr(err)
 			updateUnitsOwned(userId, req, true)
+			createOrder(userId, req, currentPrice, 1)
 			c.JSON(200, gin.H{
 				"message":       "Successfully ordered stocks",
 				"totalCost":     total,
@@ -72,6 +73,7 @@ func setupPortfolioRoutes() {
 			cash += total
 			err = setCash(userId, cash)
 			updateUnitsOwned(userId, req, false)
+			createOrder(userId, req, currentPrice, 0)
 			c.JSON(200, gin.H{
 				"message":       "Successfully sold stocks",
 				"totalCost":     total,

@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"strings"
+	"time"
 )
 
 func setupDB() {
@@ -64,6 +65,23 @@ func setupDB() {
 	      user_id          	int unsigned NOT NULL,
 	      symbol			varchar(32) NOT NULL,
 	      units				int unsigned NOT NULL,
+	      PRIMARY KEY     	(id)
+	    );
+    `
+	stmt, err = db.Prepare(cmd)
+	checkErr(err)
+	_, err = stmt.Exec()
+	checkErr(err)
+	cmd = `
+	    CREATE TABLE IF NOT EXISTS history
+	    (
+	      id              	int unsigned NOT NULL auto_increment,
+	      user_id          	int unsigned NOT NULL,
+	      symbol			varchar(32) NOT NULL,
+	      units				int unsigned NOT NULL,
+	      price				float(8) NOT NULL,
+	      buy				bit NOT NULL,
+	      added				varchar(255) NOT NULL,
 	      PRIMARY KEY     	(id)
 	    );
     `
@@ -150,4 +168,9 @@ func updateUnitsOwned(userId string, req orderRequest, buying bool) {
 		_, err = db.Exec("UPDATE positions SET units = ? WHERE user_id = ? AND symbol = ?", unitsOwned, userId, req.Symbol)
 	}
 	checkErr(err)
+}
+
+func createOrder(userId string, req orderRequest, price float64, buying int) error {
+	_, err := db.Exec("INSERT history SET user_id = ?, symbol = ?, units = ?, price = ?, buy = ?, added = ?", userId, strings.ToUpper(req.Symbol), req.Units, price, buying, time.Now().Unix())
+	return err
 }

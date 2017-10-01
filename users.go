@@ -14,7 +14,7 @@ func setupUserRoutes() {
 	{
 		users.POST("/login", func(c *gin.Context) {
 			var req loginRequest
-			c.BindWith(&req, binding.Form)
+			c.MustBindWith(&req, binding.Form)
 			if !userExists(req.Username) {
 				c.JSON(401, gin.H{"message": "user does not exist"})
 				return
@@ -45,7 +45,7 @@ func setupUserRoutes() {
 		})
 		users.POST("/logout", func(c *gin.Context) {
 			var req logoutRequest
-			c.BindWith(&req, binding.Form)
+			c.MustBindWith(&req, binding.Form)
 			var exists bool
 			err := db.QueryRow("SELECT IF(COUNT(*),'true','false') FROM sessions WHERE token=?", req.Token).Scan(&exists)
 			checkErr(err)
@@ -63,7 +63,7 @@ func setupUserRoutes() {
 		})
 		users.POST("/register", func(c *gin.Context) {
 			var req registerRequest
-			c.BindWith(&req, binding.Form)
+			c.MustBindWith(&req, binding.Form)
 			if userExists(req.Username) {
 				c.JSON(401, gin.H{
 					"message": "username already taken",
