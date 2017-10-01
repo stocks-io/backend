@@ -93,5 +93,22 @@ func setupUserRoutes() {
 				"page": "successfully registered",
 			})
 		})
+		users.GET("/leaderboard", func(c *gin.Context) {
+			rows, err := db.Query("SELECT username, cash FROM userinfo JOIN portfolio ON portfolio.user_id=userinfo.id ORDER BY cash DESC")
+			checkErr(err)
+			var leaderboard []leader
+			for rows.Next() {
+				var username string
+				var cash float64
+				err = rows.Scan(&username, &cash)
+				checkErr(err)
+				user := leader{
+					Username: username,
+					Cash:     cash,
+				}
+				leaderboard = append(leaderboard, user)
+			}
+			c.JSON(200, leaderboard)
+		})
 	}
 }
