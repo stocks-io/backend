@@ -19,6 +19,13 @@ func setupUserRoutes() {
 				c.JSON(401, gin.H{"message": "user does not exist"})
 				return
 			}
+			var hash string
+			err := db.QueryRow("SELECT password FROM userinfo WHERE username=?", req.Username).Scan(&hash)
+			checkErr(err)
+			if !checkPasswordHash(req.Password, hash) {
+				c.JSON(403, gin.H{"message": "incorrect password"})
+				return
+			}
 			id, err := getUserId(req.Username)
 			checkErr(err)
 			token, err := exec.Command("uuidgen").Output()
@@ -30,7 +37,6 @@ func setupUserRoutes() {
 			checkErr(err)
 			_, err = stmt.Exec(id, token, now, then)
 			checkErr(err)
-			fmt.Printf("%s\n", token)
 			c.JSON(200, gin.H{
 				"userId":  id,
 				"token":   fmt.Sprintf("%s", token),
@@ -73,7 +79,9 @@ func setupUserRoutes() {
 			now := time.Now().Unix()
 			stmt, err := db.Prepare("INSERT userinfo SET first_name=?, last_name=?, username=?, email=?, password=?, added=?")
 			checkErr(err)
-			_, err = stmt.Exec(req.FirstName, req.LastName, req.Username, req.Email, req.Password, now)
+			hashed, err := hashPassword(req.Password)
+			checkErr(err)
+			_, err = stmt.Exec(req.FirstName, req.LastName, req.Username, req.Email, hashed, now)
 			checkErr(err)
 			id, err := getUserId(req.Username)
 			checkErr(err)
