@@ -2,16 +2,26 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
+	"os"
 	"strings"
 	"time"
 )
 
 func setupDB() {
-	db, err = sql.Open("mysql", "root@/")
+	dbUsername := os.Getenv("DB_USERNAME")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	if len(dbUsername) == 0 {
+		panic("$DB_USERNAME is not set")
+	}
+	if len(dbUsername) == 0 {
+		panic("$DB_PASSWORD is not set")
+	}
+	db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@/", dbUsername, dbPassword))
 	checkFatalErr(err)
 	_, err := db.Exec("CREATE DATABASE IF NOT EXISTS stocks")
 	checkFatalErr(err)
-	db, err = sql.Open("mysql", "root@/stocks")
+	db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@/stocks", dbUsername, dbPassword))
 	checkFatalErr(err)
 	cmd := `
 	    CREATE TABLE IF NOT EXISTS userinfo
