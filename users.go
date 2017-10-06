@@ -66,7 +66,7 @@ func setupUserRoutes() {
 			c.ShouldBindWith(&req, binding.Form)
             if req.Username == "" || req.Email == "" || req.Password == "" || req.FirstName == "" || req.LastName == "" {
                 c.JSON(401, gin.H{
-                        "message": "all fields are required"
+                        "message": "all fields are required",
                 })
                 return
             }
