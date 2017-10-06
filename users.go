@@ -64,6 +64,12 @@ func setupUserRoutes() {
 		users.POST("/register", func(c *gin.Context) {
 			var req registerRequest
 			c.MustBindWith(&req, binding.Form)
+            if req.Username == "" || req.Email == "" || req.Password == "" || req.FirstName == "" || req.LastName == "" {
+                c.JSON(401, gin.H{
+                        "message": "all fields are required"
+                })
+                return
+            }
 			if userExists(req.Username) {
 				c.JSON(401, gin.H{
 					"message": "username already taken",
