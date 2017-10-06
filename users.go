@@ -38,14 +38,14 @@ func setupUserRoutes() {
 			var req loginRequest
 			c.ShouldBindWith(&req, binding.Form)
 			if !userExists(req.Username) {
-				c.JSON(401, gin.H{"message": "user does not exist"})
+				c.JSON(http.StatusNotFound, gin.H{"message": "user does not exist"}) // 404
 				return
 			}
 			var hash string
 			err := db.QueryRow("SELECT password FROM userinfo WHERE username=?", req.Username).Scan(&hash)
 			checkErr(err)
 			if !checkPasswordHash(req.Password, hash) {
-				c.JSON(403, gin.H{"message": "incorrect password"})
+				c.JSON(http.StatusUnauthorized, gin.H{"message": "incorrect password"}) // 401
 				return
 			}
 			id, err := getUserId(req.Username)
@@ -59,7 +59,7 @@ func setupUserRoutes() {
 			checkErr(err)
 			_, err = stmt.Exec(id, token, now, then)
 			checkErr(err)
-			c.JSON(200, gin.H{
+			c.JSON(http.StatusAccepted, gin.H{ // 201
 				"userId":  id,
 				"token":   fmt.Sprintf("%s", token),
 				"expires": then,
@@ -72,14 +72,14 @@ func setupUserRoutes() {
 			err := db.QueryRow("SELECT IF(COUNT(*),'true','false') FROM sessions WHERE token=?", req.Token).Scan(&exists)
 			checkErr(err)
 			if !exists {
-				c.JSON(401, gin.H{
+				c.JSON(http.StatusNotFound, gin.H{ // 404
 					"message": "token does not exist",
 				})
 				return
 			}
 			_, err = db.Exec("DELETE FROM sessions WHERE token=?", req.Token)
 			checkErr(err)
-			c.JSON(200, gin.H{
+			c.JSON(http.StatusOK, gin.H{ // 200
 				"message": "successfully logged out",
 			})
 		})
@@ -87,19 +87,19 @@ func setupUserRoutes() {
 			var req registerRequest
 			c.ShouldBindWith(&req, binding.Form)
 			if req.Username == "" || req.Email == "" || req.Password == "" || req.FirstName == "" || req.LastName == "" {
-				c.JSON(401, gin.H{
+				c.JSON(http.StatusBadRequest, gin.H{ // 400
 					"message": "all fields are required",
 				})
 				return
 			}
 			if userExists(req.Username) {
-				c.JSON(401, gin.H{
+				c.JSON(http.StatusNotAcceptable, gin.H{ // 406
 					"message": "username already taken",
 				})
 				return
 			}
 			if emailExists(req.Email) {
-				c.JSON(401, gin.H{
+				c.JSON(http.StatusNotAcceptable, gin.H{ // 406
 					"message": "email already taken",
 				})
 				return
@@ -117,7 +117,7 @@ func setupUserRoutes() {
 			checkErr(err)
 			_, err = stmt.Exec(id, 10000)
 			checkErr(err)
-			c.JSON(200, gin.H{
+			c.JSON(http.StatusCreated, gin.H{ // 201
 				"message": "successfully registered",
 			})
 		})
@@ -136,7 +136,7 @@ func setupUserRoutes() {
 				}
 				leaderboard = append(leaderboard, user)
 			}
-			c.JSON(200, leaderboard)
+			c.JSON(http.StatusOK, leaderboard) // 200
 		})
 	}
 }
