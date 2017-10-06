@@ -90,7 +90,7 @@ func setupUserRoutes() {
 			_, err = stmt.Exec(id, 10000)
 			checkErr(err)
 			c.JSON(200, gin.H{
-				"page": "successfully registered",
+				"message": "successfully registered",
 			})
 		})
 		users.GET("/leaderboard", func(c *gin.Context) {
