@@ -7,6 +7,12 @@ import (
 	"github.com/gin-gonic/gin/binding"
 )
 
+type orderRequest struct {
+	Token  string `form:"token" json:"token" binding:"required"`
+	Units  int    `form:"units" json:"units" binding:"required"`
+	Symbol string `form:"symbol" json:"symbol" binding:"required"`
+}
+
 func setupPortfolioRoutes() {
 	portfolio := app.Group("/portfolio")
 	{

@@ -9,6 +9,28 @@ import (
 	"github.com/gin-gonic/gin/binding"
 )
 
+type leader struct {
+	Username string
+	Cash     float64
+}
+
+type loginRequest struct {
+	Username string `form:"username" json:"username" binding:"required"`
+	Password string `form:"password" json:"password" binding:"required"`
+}
+
+type logoutRequest struct {
+	Token string `form:"token" json:"token" binding:"required"`
+}
+
+type registerRequest struct {
+	FirstName string `form:"firstName" json:"firstName" binding:"required"`
+	LastName  string `form:"lastName" json:"lastName" binding:"required"`
+	Email     string `form:"email" json:"email" binding:"required"`
+	Username  string `form:"username" json:"username" binding:"required"`
+	Password  string `form:"password" json:"password" binding:"required"`
+}
+
 func setupUserRoutes() {
 	users := app.Group("/users")
 	{
@@ -64,12 +86,12 @@ func setupUserRoutes() {
 		users.POST("/register", func(c *gin.Context) {
 			var req registerRequest
 			c.ShouldBindWith(&req, binding.Form)
-            if req.Username == "" || req.Email == "" || req.Password == "" || req.FirstName == "" || req.LastName == "" {
-                c.JSON(401, gin.H{
-                        "message": "all fields are required",
-                })
-                return
-            }
+			if req.Username == "" || req.Email == "" || req.Password == "" || req.FirstName == "" || req.LastName == "" {
+				c.JSON(401, gin.H{
+					"message": "all fields are required",
+				})
+				return
+			}
 			if userExists(req.Username) {
 				c.JSON(401, gin.H{
 					"message": "username already taken",
