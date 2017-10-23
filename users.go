@@ -86,7 +86,7 @@ func setupUserRoutes() {
 		users.POST("/register", func(c *gin.Context) {
 			var req registerRequest
 			c.ShouldBindWith(&req, binding.Form)
-			if req.Email == "" || req.Email == "" || req.Password == "" || req.FirstName == "" || req.LastName == "" {
+			if req.Email == "" || req.Password == "" || req.FirstName == "" || req.LastName == "" {
 				c.JSON(http.StatusBadRequest, gin.H{ // 400
 					"message": "all fields are required",
 				})
@@ -109,7 +109,7 @@ func setupUserRoutes() {
 			checkErr(err)
 			hashed, err := hashPassword(req.Password)
 			checkErr(err)
-			_, err = stmt.Exec(req.FirstName, req.LastName, req.Email, req.Email, hashed, now)
+			_, err = stmt.Exec(req.FirstName, req.LastName, req.Email, hashed, now)
 			checkErr(err)
 			id, err := getUserId(req.Email)
 			checkErr(err)
