@@ -14,9 +14,6 @@ func setupDB() {
 	if len(dbUsername) == 0 {
 		panic("$DB_USERNAME is not set")
 	}
-	if len(dbPassword) == 0 {
-		panic("$DB_PASSWORD is not set")
-	}
 	db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@/", dbUsername, dbPassword))
 	checkFatalErr(err)
 	_, err := db.Exec("CREATE DATABASE IF NOT EXISTS stocks")

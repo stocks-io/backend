@@ -11,12 +11,12 @@ import (
 )
 
 type leader struct {
-	Username string
-	Cash     float64
+	Email string
+	Cash  float64
 }
 
 type loginRequest struct {
-	Username string `form:"username" json:"username" binding:"required"`
+	Email    string `form:"email" json:"username" binding:"required"`
 	Password string `form:"password" json:"password" binding:"required"`
 }
 
@@ -28,7 +28,6 @@ type registerRequest struct {
 	FirstName string `form:"firstName" json:"firstName" binding:"required"`
 	LastName  string `form:"lastName" json:"lastName" binding:"required"`
 	Email     string `form:"email" json:"email" binding:"required"`
-	Username  string `form:"username" json:"username" binding:"required"`
 	Password  string `form:"password" json:"password" binding:"required"`
 }
 
@@ -38,18 +37,18 @@ func setupUserRoutes() {
 		users.POST("/login", func(c *gin.Context) {
 			var req loginRequest
 			c.ShouldBindWith(&req, binding.Form)
-			if !userExists(req.Username) {
+			if !userExists(req.Email) {
 				c.JSON(http.StatusNotFound, gin.H{"message": "user does not exist"}) // 404
 				return
 			}
 			var hash string
-			err := db.QueryRow("SELECT password FROM userinfo WHERE username=?", req.Username).Scan(&hash)
+			err := db.QueryRow("SELECT password FROM userinfo WHERE email=?", req.Email).Scan(&hash)
 			checkErr(err)
 			if !checkPasswordHash(req.Password, hash) {
 				c.JSON(http.StatusUnauthorized, gin.H{"message": "incorrect password"}) // 401
 				return
 			}
-			id, err := getUserId(req.Username)
+			id, err := getUserId(req.Email)
 			checkErr(err)
 			token, err := exec.Command("uuidgen").Output()
 			token = token[0 : len(token)-1]
@@ -87,15 +86,15 @@ func setupUserRoutes() {
 		users.POST("/register", func(c *gin.Context) {
 			var req registerRequest
 			c.ShouldBindWith(&req, binding.Form)
-			if req.Username == "" || req.Email == "" || req.Password == "" || req.FirstName == "" || req.LastName == "" {
+			if req.Email == "" || req.Email == "" || req.Password == "" || req.FirstName == "" || req.LastName == "" {
 				c.JSON(http.StatusBadRequest, gin.H{ // 400
 					"message": "all fields are required",
 				})
 				return
 			}
-			if userExists(req.Username) {
+			if userExists(req.Email) {
 				c.JSON(http.StatusNotAcceptable, gin.H{ // 406
-					"message": "username already taken",
+					"message": "email already taken",
 				})
 				return
 			}
@@ -106,13 +105,13 @@ func setupUserRoutes() {
 				return
 			}
 			now := time.Now().Unix()
-			stmt, err := db.Prepare("INSERT userinfo SET first_name=?, last_name=?, username=?, email=?, password=?, added=?")
+			stmt, err := db.Prepare("INSERT userinfo SET first_name=?, last_name=?, email=?, password=?, added=?")
 			checkErr(err)
 			hashed, err := hashPassword(req.Password)
 			checkErr(err)
-			_, err = stmt.Exec(req.FirstName, req.LastName, req.Username, req.Email, hashed, now)
+			_, err = stmt.Exec(req.FirstName, req.LastName, req.Email, req.Email, hashed, now)
 			checkErr(err)
-			id, err := getUserId(req.Username)
+			id, err := getUserId(req.Email)
 			checkErr(err)
 			stmt, err = db.Prepare("INSERT portfolio SET user_id=?, cash=?")
 			checkErr(err)
@@ -123,7 +122,7 @@ func setupUserRoutes() {
 			})
 		})
 		users.GET("/leaderboard", func(c *gin.Context) {
-			rows, err := db.Query("SELECT username, cash FROM userinfo JOIN portfolio ON portfolio.user_id=userinfo.id ORDER BY cash DESC")
+			rows, err := db.Query("SELECT email, cash FROM userinfo JOIN portfolio ON portfolio.user_id=userinfo.id ORDER BY cash DESC")
 			checkErr(err)
 			var leaderboard []leader
 			for rows.Next() {
@@ -132,8 +131,8 @@ func setupUserRoutes() {
 				err = rows.Scan(&username, &cash)
 				checkErr(err)
 				user := leader{
-					Username: username,
-					Cash:     cash,
+					Email: username,
+					Cash:  cash,
 				}
 				leaderboard = append(leaderboard, user)
 			}
