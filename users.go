@@ -16,7 +16,7 @@ type leader struct {
 }
 
 type loginRequest struct {
-	Email    string `form:"email" json:"username" binding:"required"`
+	Email    string `form:"email" json:"email" binding:"required"`
 	Password string `form:"password" json:"password" binding:"required"`
 }
 
@@ -126,12 +126,12 @@ func setupUserRoutes() {
 			checkErr(err)
 			var leaderboard []leader
 			for rows.Next() {
-				var username string
+				var email string
 				var cash float64
-				err = rows.Scan(&username, &cash)
+				err = rows.Scan(&email, &cash)
 				checkErr(err)
 				user := leader{
-					Email: username,
+					Email: email,
 					Cash:  cash,
 				}
 				leaderboard = append(leaderboard, user)

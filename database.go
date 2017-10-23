@@ -26,7 +26,6 @@ func setupDB() {
 	      id              	int unsigned NOT NULL auto_increment,
 	      first_name		varchar(255) NOT NULL,
 	      last_name			varchar(255) NOT NULL,
-	      username			varchar(255) NOT NULL UNIQUE,
 	      email         	varchar(255) NOT NULL UNIQUE,
 	      password         	varchar(255) NOT NULL,
 	      added           	varchar(255) NOT NULL,
@@ -98,8 +97,8 @@ func setupDB() {
 	checkErr(err)
 }
 
-func getUserId(username string) (int, error) {
-	rows, err := db.Query("SELECT id FROM userinfo WHERE username=?", username)
+func getUserId(email string) (int, error) {
+	rows, err := db.Query("SELECT id FROM userinfo WHERE email=?", email)
 	checkErr(err)
 	defer rows.Close()
 	var id int
@@ -115,9 +114,9 @@ func emailExists(email string) bool {
 	return exists
 }
 
-func userExists(username string) bool {
+func userExists(email string) bool {
 	var exists bool
-	err := db.QueryRow("SELECT IF(COUNT(*),'true','false') FROM userinfo WHERE username=?", username).Scan(&exists)
+	err := db.QueryRow("SELECT IF(COUNT(*),'true','false') FROM userinfo WHERE email=?", email).Scan(&exists)
 	checkErr(err)
 	return exists
 }
