@@ -31,6 +31,15 @@ type registerRequest struct {
 	Password  string `form:"password" json:"password" binding:"required"`
 }
 
+type history struct {
+	Date  string
+	Value float64
+}
+
+type historyRequest struct {
+	Token string `form:"token" json:"token" binding:"required"`
+}
+
 func setupUserRoutes() {
 	users := app.Group("/users")
 	{
@@ -137,6 +146,28 @@ func setupUserRoutes() {
 				leaderboard = append(leaderboard, user)
 			}
 			c.JSON(http.StatusOK, leaderboard) // 200
+		})
+		users.POST("history", func(c *gin.Context) {
+			var req historyRequest
+			c.ShouldBindWith(&req, binding.Form)
+
+			id, err := getUserIdFromToken(req.Token)
+			checkErr(err)
+			rows, err := db.Query("SELECT added, net_worth FROM value_history WHERE user_id = ? ", id)
+			checkErr(err)
+			var allHistory []history
+			for rows.Next() {
+				var date string
+				var value float64
+				err = rows.Scan(&date, &value)
+				checkErr(err)
+				h := history{
+					Date:  date,
+					Value: value,
+				}
+				allHistory = append(allHistory, h)
+			}
+			c.JSON(http.StatusOK, allHistory) // 200
 		})
 	}
 }

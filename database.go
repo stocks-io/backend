@@ -79,7 +79,7 @@ func setupDB() {
 	_, err = stmt.Exec()
 	checkErr(err)
 	cmd = `
-	    CREATE TABLE IF NOT EXISTS history
+	    CREATE TABLE IF NOT EXISTS order_history
 	    (
 	      id              	int unsigned NOT NULL auto_increment,
 	      user_id          	int unsigned NOT NULL,
@@ -95,6 +95,31 @@ func setupDB() {
 	checkErr(err)
 	_, err = stmt.Exec()
 	checkErr(err)
+
+	cmd = `
+	    CREATE TABLE IF NOT EXISTS value_history
+	    (
+	      id              	int unsigned NOT NULL auto_increment,
+	      user_id          	int unsigned NOT NULL,
+	      net_worth		float(8) NOT NULL,
+	      added				varchar(255) NOT NULL,
+	      PRIMARY KEY     	(id)
+	    );
+    `
+	stmt, err = db.Prepare(cmd)
+	checkErr(err)
+	_, err = stmt.Exec()
+	checkErr(err)
+}
+
+func getUserIdFromToken(token string) (int, error) {
+	rows, err := db.Query("SELECT user_id FROM sessions WHERE token=?", token)
+	checkErr(err)
+	defer rows.Close()
+	var id int
+	rows.Next()
+	err = rows.Scan(&id)
+	return id, err
 }
 
 func getUserId(email string) (int, error) {
@@ -177,6 +202,6 @@ func updateUnitsOwned(userId string, req orderRequest, buying bool) {
 }
 
 func createOrder(userId string, req orderRequest, price float64, buying int) error {
-	_, err := db.Exec("INSERT history SET user_id = ?, symbol = ?, units = ?, price = ?, buy = ?, added = ?", userId, strings.ToUpper(req.Symbol), req.Units, price, buying, time.Now().Unix())
+	_, err := db.Exec("INSERT order_history SET user_id = ?, symbol = ?, units = ?, price = ?, buy = ?, added = ?", userId, strings.ToUpper(req.Symbol), req.Units, price, buying, time.Now().Unix())
 	return err
 }
