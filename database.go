@@ -291,17 +291,7 @@ func mockData() {
 		log.Fatal(err)
 	}
 	rand.Seed(time.Now().Unix())
-	numUsers := len(resp.Results)
 	for i, e := range resp.Results {
-		/* order_history
-		   id              	int unsigned NOT NULL auto_increment,
-		   user_id          	int unsigned NOT NULL,
-		   symbol			varchar(32) NOT NULL,
-		   units				int unsigned NOT NULL,
-		   price				float(8) NOT NULL,
-		   buy				bit NOT NULL,
-		   added				varchar(255) NOT NULL,
-		*/
 		t := time.Now()
 		_, err = db.Exec("INSERT userinfo SET first_name = ?, last_name = ?, email = ?, password = ?, added = ?", e.Name.First, e.Name.Last, e.Email, e.Login.Md5, t.Unix())
 		if err != nil {
@@ -322,7 +312,29 @@ func mockData() {
 		}
 		numPositions := rand.Intn(20)
 		for j := 0; j < numPositions; j++ {
-			_, err = db.Exec("INSERT positions SET user_id = ?, symbol = ?, units = ?", i+1, symbols[rand.Intn(len(symbols))], rand.Intn(numUsers))
+			_, err = db.Exec("INSERT positions SET user_id = ?, symbol = ?, units = ?", i+1, symbols[rand.Intn(len(symbols))], rand.Intn(30))
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+		numOrderHistory := rand.Intn(50)
+		for j := 0; j < numOrderHistory; j++ {
+			_, err = db.Exec("INSERT order_history SET user_id = ?, symbol = ?, units = ?, price = ?, buy = ?, added = ?",
+				i+1, symbols[rand.Intn(len(symbols))], rand.Intn(30), rand.Intn(1000), rand.Intn(2), t.Unix()-int64(86400))
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+		/*
+					      id              	int unsigned NOT NULL auto_increment,
+			      user_id          	int unsigned NOT NULL,
+			      net_worth		float(8) NOT NULL,
+			      added				varchar(255) NOT NULL,
+			      PRIMARY KEY     	(id)
+		*/
+		numValueHistory := rand.Intn(10)
+		for j := 0; j < numValueHistory; j++ {
+			_, err = db.Exec("INSERT value_history SET user_id = ?, net_worth = ?, added = ?", i+1, e.Location.Postcode*(rand.Intn(5)+1), t.Unix())
 			if err != nil {
 				log.Fatal(err)
 			}
