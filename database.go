@@ -247,16 +247,19 @@ func updateUnitsOwned(userId string, req orderRequest, buying bool) {
 		panic("Cannot sell with no inventory")
 	}
 	if unitsOwned == 0 {
-		_, err = db.Exec("INSERT positions SET user_id = ?, symbol = ?, units = ?", userId, strings.ToUpper(req.Symbol), req.Units)
+		_, err = db.Exec("INSERT positions SET user_id = ?, symbol = ?, units = ?",
+			userId, strings.ToUpper(req.Symbol), req.Units)
 	} else {
 		unitsOwned += req.Units * orderModulator
-		_, err = db.Exec("UPDATE positions SET units = ? WHERE user_id = ? AND symbol = ?", unitsOwned, userId, req.Symbol)
+		_, err = db.Exec("UPDATE positions SET units = ? WHERE user_id = ? AND symbol = ?",
+			unitsOwned, userId, req.Symbol)
 	}
 	checkErr(err)
 }
 
 func createOrder(userId string, req orderRequest, price float64, buying int) error {
-	_, err := db.Exec("INSERT order_history SET user_id = ?, symbol = ?, units = ?, price = ?, buy = ?, added = ?", userId, strings.ToUpper(req.Symbol), req.Units, price, buying, time.Now().Unix())
+	_, err := db.Exec("INSERT order_history SET user_id = ?, symbol = ?, units = ?, price = ?, buy = ?, added = ?",
+		userId, strings.ToUpper(req.Symbol), req.Units, price, buying, time.Now().Unix())
 	return err
 }
 
@@ -272,7 +275,8 @@ func mockData() {
 	webClient := http.Client{
 		Timeout: time.Second * 10, // Maximum of 2 secs
 	}
-	req, err := http.NewRequest(http.MethodGet, "https://randomuser.me/api/?results=50&seed=stocks&nat=us", nil)
+	req, err := http.NewRequest(http.MethodGet,
+		"https://randomuser.me/api/?results=50&seed=stocks&nat=us", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -293,7 +297,8 @@ func mockData() {
 	rand.Seed(time.Now().Unix())
 	for i, e := range resp.Results {
 		t := time.Now()
-		_, err = db.Exec("INSERT userinfo SET first_name = ?, last_name = ?, email = ?, password = ?, added = ?", e.Name.First, e.Name.Last, e.Email, e.Login.Md5, t.Unix())
+		_, err = db.Exec("INSERT userinfo SET first_name = ?, last_name = ?, email = ?, password = ?, added = ?",
+			e.Name.First, e.Name.Last, e.Email, e.Login.Md5, t.Unix())
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -301,18 +306,21 @@ func mockData() {
 		for j := 0; j < numSessions; j++ {
 			token, err := exec.Command("uuidgen").Output()
 			token = token[0 : len(token)-1]
-			_, err = db.Exec("INSERT sessions SET user_id = ?, token = ?, added = ?, expires = ?", i+1, token, t.Unix(), t.Add(time.Hour*24).Unix())
+			_, err = db.Exec("INSERT sessions SET user_id = ?, token = ?, added = ?, expires = ?",
+				i+1, token, t.Unix(), t.Add(time.Hour*24).Unix())
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
-		_, err = db.Exec("INSERT portfolio SET user_id = ?, cash = ?", i+1, e.Location.Postcode)
+		_, err = db.Exec("INSERT portfolio SET user_id = ?, cash = ?",
+			i+1, e.Location.Postcode)
 		if err != nil {
 			log.Fatal(err)
 		}
 		numPositions := rand.Intn(20)
 		for j := 0; j < numPositions; j++ {
-			_, err = db.Exec("INSERT positions SET user_id = ?, symbol = ?, units = ?", i+1, symbols[rand.Intn(len(symbols))], rand.Intn(30))
+			_, err = db.Exec("INSERT positions SET user_id = ?, symbol = ?, units = ?",
+				i+1, symbols[rand.Intn(len(symbols))], rand.Intn(30))
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -325,16 +333,10 @@ func mockData() {
 				log.Fatal(err)
 			}
 		}
-		/*
-					      id              	int unsigned NOT NULL auto_increment,
-			      user_id          	int unsigned NOT NULL,
-			      net_worth		float(8) NOT NULL,
-			      added				varchar(255) NOT NULL,
-			      PRIMARY KEY     	(id)
-		*/
 		numValueHistory := rand.Intn(10)
 		for j := 0; j < numValueHistory; j++ {
-			_, err = db.Exec("INSERT value_history SET user_id = ?, net_worth = ?, added = ?", i+1, e.Location.Postcode*(rand.Intn(5)+1), t.Unix())
+			_, err = db.Exec("INSERT value_history SET user_id = ?, net_worth = ?, added = ?",
+				i+1, e.Location.Postcode*(rand.Intn(5)+1), t.Unix())
 			if err != nil {
 				log.Fatal(err)
 			}
