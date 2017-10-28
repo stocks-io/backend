@@ -60,19 +60,18 @@ type mockResponse struct {
 	} `json:"info"`
 }
 
-func setupDB() {
+func setupDB(name string) *sql.DB {
 	dbUsername := os.Getenv("DB_USERNAME")
 	dbPassword := os.Getenv("DB_PASSWORD")
 	if len(dbUsername) == 0 {
 		panic("$DB_USERNAME is not set")
 	}
-	db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@/", dbUsername, dbPassword))
+	database, err := sql.Open("mysql", fmt.Sprintf("%s:%s@/", dbUsername, dbPassword))
 	checkFatalErr(err)
-	db.Exec("DROP DATABASE IF EXISTS stocks")
 
-	_, err := db.Exec("CREATE DATABASE IF NOT EXISTS stocks")
+	_, err = database.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", name))
 	checkFatalErr(err)
-	db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@/stocks", dbUsername, dbPassword))
+	database, err = sql.Open("mysql", fmt.Sprintf("%s:%s@/%s", dbUsername, dbPassword, name))
 	checkFatalErr(err)
 	cmd := `
 	    CREATE TABLE IF NOT EXISTS userinfo
@@ -86,7 +85,7 @@ func setupDB() {
 	      PRIMARY KEY    	(id)
 	    );
     `
-	stmt, err := db.Prepare(cmd)
+	stmt, err := database.Prepare(cmd)
 	checkErr(err)
 	_, err = stmt.Exec()
 	checkErr(err)
@@ -101,7 +100,7 @@ func setupDB() {
 	      PRIMARY KEY    	string(id)
 	    );
     `
-	stmt, err = db.Prepare(cmd)
+	stmt, err = database.Prepare(cmd)
 	checkErr(err)
 	_, err = stmt.Exec()
 	checkErr(err)
@@ -114,7 +113,7 @@ func setupDB() {
 	      PRIMARY KEY     	(id)
 	    );
     `
-	stmt, err = db.Prepare(cmd)
+	stmt, err = database.Prepare(cmd)
 	checkErr(err)
 	_, err = stmt.Exec()
 	checkErr(err)
@@ -128,7 +127,7 @@ func setupDB() {
 	      PRIMARY KEY     	(id)
 	    );
     `
-	stmt, err = db.Prepare(cmd)
+	stmt, err = database.Prepare(cmd)
 	checkErr(err)
 	_, err = stmt.Exec()
 	checkErr(err)
@@ -145,7 +144,7 @@ func setupDB() {
 	      PRIMARY KEY     	(id)
 	    );
     `
-	stmt, err = db.Prepare(cmd)
+	stmt, err = database.Prepare(cmd)
 	checkErr(err)
 	_, err = stmt.Exec()
 	checkErr(err)
@@ -160,10 +159,11 @@ func setupDB() {
 	      PRIMARY KEY     	(id)
 	    );
     `
-	stmt, err = db.Prepare(cmd)
+	stmt, err = database.Prepare(cmd)
 	checkErr(err)
 	_, err = stmt.Exec()
 	checkErr(err)
+	return database
 }
 
 func getUserIdFromToken(token string) (int, error) {
@@ -263,7 +263,12 @@ func createOrder(userId string, req orderRequest, price float64, buying int) err
 	return err
 }
 
-func mockData() {
+func mockData(database *sql.DB) {
+	if os.Getenv("DB_MOCK") == "" {
+		log.Printf("skipping DB mock...")
+		return
+	}
+	log.Printf("mocking DB mock...")
 	symbols := []string{
 		"TSLA",
 		"AMZN",
@@ -297,7 +302,7 @@ func mockData() {
 	rand.Seed(time.Now().Unix())
 	for i, e := range resp.Results {
 		t := time.Now()
-		_, err = db.Exec("INSERT userinfo SET first_name = ?, last_name = ?, email = ?, password = ?, added = ?",
+		_, err = database.Exec("INSERT userinfo SET first_name = ?, last_name = ?, email = ?, password = ?, added = ?",
 			e.Name.First, e.Name.Last, e.Email, e.Login.Md5, t.Unix())
 		if err != nil {
 			log.Fatal(err)
@@ -306,20 +311,20 @@ func mockData() {
 		for j := 0; j < numSessions; j++ {
 			token, err := exec.Command("uuidgen").Output()
 			token = token[0 : len(token)-1]
-			_, err = db.Exec("INSERT sessions SET user_id = ?, token = ?, added = ?, expires = ?",
+			_, err = database.Exec("INSERT sessions SET user_id = ?, token = ?, added = ?, expires = ?",
 				i+1, token, t.Unix(), t.Add(time.Hour*24).Unix())
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
-		_, err = db.Exec("INSERT portfolio SET user_id = ?, cash = ?",
+		_, err = database.Exec("INSERT portfolio SET user_id = ?, cash = ?",
 			i+1, e.Location.Postcode)
 		if err != nil {
 			log.Fatal(err)
 		}
 		numPositions := rand.Intn(20)
 		for j := 0; j < numPositions; j++ {
-			_, err = db.Exec("INSERT positions SET user_id = ?, symbol = ?, units = ?",
+			_, err = database.Exec("INSERT positions SET user_id = ?, symbol = ?, units = ?",
 				i+1, symbols[rand.Intn(len(symbols))], rand.Intn(30))
 			if err != nil {
 				log.Fatal(err)
@@ -327,7 +332,7 @@ func mockData() {
 		}
 		numOrderHistory := rand.Intn(50)
 		for j := 0; j < numOrderHistory; j++ {
-			_, err = db.Exec("INSERT order_history SET user_id = ?, symbol = ?, units = ?, price = ?, buy = ?, added = ?",
+			_, err = database.Exec("INSERT order_history SET user_id = ?, symbol = ?, units = ?, price = ?, buy = ?, added = ?",
 				i+1, symbols[rand.Intn(len(symbols))], rand.Intn(30), rand.Intn(1000), rand.Intn(2), t.Unix()-int64(86400))
 			if err != nil {
 				log.Fatal(err)
@@ -335,11 +340,12 @@ func mockData() {
 		}
 		numValueHistory := rand.Intn(10)
 		for j := 0; j < numValueHistory; j++ {
-			_, err = db.Exec("INSERT value_history SET user_id = ?, net_worth = ?, added = ?",
+			_, err = database.Exec("INSERT value_history SET user_id = ?, net_worth = ?, added = ?",
 				i+1, e.Location.Postcode*(rand.Intn(5)+1), t.Unix())
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
 	}
+	log.Printf("DB mock complete!")
 }
