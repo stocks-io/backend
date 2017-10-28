@@ -13,7 +13,8 @@ var err error
 
 func main() {
 	app = gin.Default()
-	setupDB()
+	db = setupDB("stocks")
+	mockData(setupDB("stocks_mock"))
 	setupUserRoutes()
 	setupPortfolioRoutes()
 
