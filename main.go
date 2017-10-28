@@ -14,8 +14,9 @@ var err error
 func main() {
 	app = gin.Default()
 	setupDB()
-	setupUserRoutes()
-	setupPortfolioRoutes()
+	mockData()
+	//setupUserRoutes()
+	//setupPortfolioRoutes()
 
-	app.Run(":8080")
+	//app.Run(":8080")
 }

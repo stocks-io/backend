@@ -2,11 +2,63 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"math/rand"
+	"net/http"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 )
+
+type mockResponse struct {
+	Results []struct {
+		Gender string `json:"gender"`
+		Name   struct {
+			Title string `json:"title"`
+			First string `json:"first"`
+			Last  string `json:"last"`
+		} `json:"name"`
+		Location struct {
+			Street   string `json:"street"`
+			City     string `json:"city"`
+			State    string `json:"state"`
+			Postcode int    `json:"postcode"`
+		} `json:"location"`
+		Email string `json:"email"`
+		Login struct {
+			Username string `json:"username"`
+			Password string `json:"password"`
+			Salt     string `json:"salt"`
+			Md5      string `json:"md5"`
+			Sha1     string `json:"sha1"`
+			Sha256   string `json:"sha256"`
+		} `json:"login"`
+		Dob        string `json:"dob"`
+		Registered string `json:"registered"`
+		Phone      string `json:"phone"`
+		Cell       string `json:"cell"`
+		ID         struct {
+			Name  string `json:"name"`
+			Value string `json:"value"`
+		} `json:"id"`
+		Picture struct {
+			Large     string `json:"large"`
+			Medium    string `json:"medium"`
+			Thumbnail string `json:"thumbnail"`
+		} `json:"picture"`
+		Nat string `json:"nat"`
+	} `json:"results"`
+	Info struct {
+		Seed    string `json:"seed"`
+		Results int    `json:"results"`
+		Page    int    `json:"page"`
+		Version string `json:"version"`
+	} `json:"info"`
+}
 
 func setupDB() {
 	dbUsername := os.Getenv("DB_USERNAME")
@@ -16,6 +68,8 @@ func setupDB() {
 	}
 	db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@/", dbUsername, dbPassword))
 	checkFatalErr(err)
+	db.Exec("DROP DATABASE IF EXISTS stocks")
+
 	_, err := db.Exec("CREATE DATABASE IF NOT EXISTS stocks")
 	checkFatalErr(err)
 	db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@/stocks", dbUsername, dbPassword))
@@ -204,4 +258,74 @@ func updateUnitsOwned(userId string, req orderRequest, buying bool) {
 func createOrder(userId string, req orderRequest, price float64, buying int) error {
 	_, err := db.Exec("INSERT order_history SET user_id = ?, symbol = ?, units = ?, price = ?, buy = ?, added = ?", userId, strings.ToUpper(req.Symbol), req.Units, price, buying, time.Now().Unix())
 	return err
+}
+
+func mockData() {
+	symbols := []string{
+		"TSLA",
+		"AMZN",
+		"FB",
+		"GOOG",
+		"MSFT",
+		"ANET",
+	}
+	webClient := http.Client{
+		Timeout: time.Second * 10, // Maximum of 2 secs
+	}
+	req, err := http.NewRequest(http.MethodGet, "https://randomuser.me/api/?results=50&seed=stocks&nat=us", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("User-Agent", "stocks-web-client")
+	res, err := webClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	resp := mockResponse{}
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		log.Fatal(err)
+	}
+	rand.Seed(time.Now().Unix())
+	numUsers := len(resp.Results)
+	for i, e := range resp.Results {
+		/* order_history
+		   id              	int unsigned NOT NULL auto_increment,
+		   user_id          	int unsigned NOT NULL,
+		   symbol			varchar(32) NOT NULL,
+		   units				int unsigned NOT NULL,
+		   price				float(8) NOT NULL,
+		   buy				bit NOT NULL,
+		   added				varchar(255) NOT NULL,
+		*/
+		t := time.Now()
+		_, err = db.Exec("INSERT userinfo SET first_name = ?, last_name = ?, email = ?, password = ?, added = ?", e.Name.First, e.Name.Last, e.Email, e.Login.Md5, t.Unix())
+		if err != nil {
+			log.Fatal(err)
+		}
+		numSessions := rand.Intn(10)
+		for j := 0; j < numSessions; j++ {
+			token, err := exec.Command("uuidgen").Output()
+			token = token[0 : len(token)-1]
+			_, err = db.Exec("INSERT sessions SET user_id = ?, token = ?, added = ?, expires = ?", i+1, token, t.Unix(), t.Add(time.Hour*24).Unix())
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+		_, err = db.Exec("INSERT portfolio SET user_id = ?, cash = ?", i+1, e.Location.Postcode)
+		if err != nil {
+			log.Fatal(err)
+		}
+		numPositions := rand.Intn(20)
+		for j := 0; j < numPositions; j++ {
+			_, err = db.Exec("INSERT positions SET user_id = ?, symbol = ?, units = ?", i+1, symbols[rand.Intn(len(symbols))], rand.Intn(numUsers))
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
 }
