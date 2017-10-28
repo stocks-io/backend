@@ -18,7 +18,7 @@ func setupPortfolioRoutes() {
 	{
 		portfolio.POST("/buy", func(c *gin.Context) {
 			var req orderRequest
-			c.BindWith(&req, binding.Form)
+			c.ShouldBindWith(&req, binding.Form)
 			if req.Units < 0 {
 				c.JSON(401, gin.H{"message": "Cannot buy negative units"})
 				return
@@ -54,7 +54,7 @@ func setupPortfolioRoutes() {
 		})
 		portfolio.POST("/sell", func(c *gin.Context) {
 			var req orderRequest
-			c.BindWith(&req, binding.Form)
+			c.ShouldBindWith(&req, binding.Form)
 			if req.Units < 0 {
 				c.JSON(401, gin.H{"message": "Cannot sell negative units"})
 				return
