@@ -264,10 +264,6 @@ func createOrder(userId string, req orderRequest, price float64, buying int) err
 }
 
 func mockData(database *sql.DB) {
-	if os.Getenv("DB_MOCK") == "" {
-		log.Printf("skipping DB mock...")
-		return
-	}
 	log.Printf("mocking DB mock...")
 	symbols := []string{
 		"TSLA",
