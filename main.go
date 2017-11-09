@@ -11,14 +11,17 @@ import (
 
 var app *gin.Engine
 var db *sql.DB
+var mockDB *sql.DB
 var err error
 
 func main() {
 	app = gin.Default()
 	db = setupDB("stocks")
+	mockDB = setupDB("stocks_mock")
 	if os.Getenv("DB_MOCK") != "" {
-		mockDB := setupDB("stocks_mock")
 		mockData(mockDB)
+	}
+	if os.Getenv("USE_MOCK") != "" {
 		db = mockDB
 		log.Println("Using mock database!")
 	}
