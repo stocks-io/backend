@@ -81,7 +81,7 @@ func setupUserRoutes() {
 			err := db.QueryRow("SELECT IF(COUNT(*),'true','false') FROM sessions WHERE token=?", req.Token).Scan(&exists)
 			checkErr(err)
 			if !exists {
-				c.JSON(http.StatusNotFound, gin.H{ // 404
+				c.JSON(http.StatusUnauthorized, gin.H{ // 401
 					"message": "token does not exist",
 				})
 				return
@@ -147,7 +147,7 @@ func setupUserRoutes() {
 			}
 			c.JSON(http.StatusOK, leaderboard) // 200
 		})
-		users.POST("history", func(c *gin.Context) {
+		users.POST("/history", func(c *gin.Context) {
 			var req historyRequest
 			c.ShouldBindWith(&req, binding.Form)
 
