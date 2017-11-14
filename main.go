@@ -18,7 +18,7 @@ func main() {
 	app = gin.Default()
 	db = setupDB("stocks")
 	mockDB = setupDB("stocks_mock")
-	if os.Getenv("DB_MOCK") != "" {
+	if os.Getenv("MOCK_DB") != "" {
 		mockData(mockDB)
 	}
 	if os.Getenv("USE_MOCK") != "" {
