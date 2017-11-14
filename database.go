@@ -335,9 +335,19 @@ func mockData(database *sql.DB) {
 			}
 		}
 		numValueHistory := rand.Intn(10)
+		var usedDays []int64
 		for j := 0; j < numValueHistory; j++ {
+			day := rand.Int63() % int64(365)
+			for i := 0; i < len(usedDays); i++ {
+				for usedDays[i] == day {
+					day = rand.Int63() % int64(365)
+					i = 0
+				}
+			}
+			added := t.Unix() - (86400 * day) - (rand.Int63() % 86400)
+			usedDays = append(usedDays, day)
 			_, err = database.Exec("INSERT value_history SET user_id = ?, net_worth = ?, added = ?",
-				i+1, e.Location.Postcode*(rand.Intn(5)+1), t.Unix())
+				i+1, e.Location.Postcode*(rand.Intn(5)+1), added)
 			if err != nil {
 				log.Fatal(err)
 			}
