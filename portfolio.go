@@ -13,6 +13,10 @@ type orderRequest struct {
 	Symbol string `form:"symbol" json:"symbol" binding:"required"`
 }
 
+type ownedRequest struct {
+	Token string `form:"token" json:"token" binding:"required"`
+}
+
 func setupPortfolioRoutes() {
 	portfolio := app.Group("/portfolio")
 	{
@@ -85,6 +89,18 @@ func setupPortfolioRoutes() {
 				"totalCost":     total,
 				"remainingCash": cash,
 			})
+		})
+
+		portfolio.POST("/owned", func(c *gin.Context) {
+			var req ownedRequest
+			c.ShouldBindWith(&req, binding.Form)
+			userId := tokenToUserId(req.Token)
+			if userId == "" {
+				c.JSON(401, gin.H{"message": "Unauthorized"})
+				return
+			}
+			positions := getPositions(userId)
+			c.JSON(200, positions)
 		})
 
 		portfolio.GET("/update/:userID", func(c *gin.Context) {

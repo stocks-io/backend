@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 	"time"
 )
@@ -58,6 +59,11 @@ type mockResponse struct {
 		Page    int    `json:"page"`
 		Version string `json:"version"`
 	} `json:"info"`
+}
+
+type position struct {
+	Symbol string
+	Units  int
 }
 
 func setupDB(name string) *sql.DB {
@@ -233,6 +239,20 @@ func getUnitsOwned(userId string, symbol string) int {
 	return unitsOwned
 }
 
+func getPositions(userId string) []position {
+	var positions []position
+	rows, err := db.Query("SELECT symbol, units FROM positions WHERE user_id = ?", userId)
+	checkErr(err)
+	defer rows.Close()
+	for rows.Next() {
+		var pos position
+		err = rows.Scan(&pos.Symbol, &pos.Units)
+		checkErr(err)
+		positions = append(positions, pos)
+	}
+	return positions
+}
+
 func updateUnitsOwned(userId string, req orderRequest, buying bool) {
 	unitsOwned := getUnitsOwned(userId, req.Symbol)
 	var err error
@@ -335,19 +355,23 @@ func mockData(database *sql.DB) {
 			}
 		}
 		numValueHistory := rand.Intn(10)
-		var usedDays []int64
+		var usedDays, times []int
 		for j := 0; j < numValueHistory; j++ {
-			day := rand.Int63() % int64(365)
-			for i := 0; i < len(usedDays); i++ {
-				for usedDays[i] == day {
-					day = rand.Int63() % int64(365)
-					i = 0
+			for k := 0; k < numValueHistory; k++ {
+				day := rand.Int() % 365
+				for i := 0; i < len(usedDays); i++ {
+					for usedDays[i] == day {
+						day = rand.Int() % 365
+						i = 0
+					}
 				}
+				added := int(int(t.Unix()) - (86400 * day) - (rand.Int() % 86400))
+				usedDays = append(usedDays, day)
+				times = append(times, added)
 			}
-			added := t.Unix() - (86400 * day) - (rand.Int63() % 86400)
-			usedDays = append(usedDays, day)
+			sort.Ints(times)
 			_, err = database.Exec("INSERT value_history SET user_id = ?, net_worth = ?, added = ?",
-				i+1, e.Location.Postcode*(rand.Intn(5)+1), added)
+				i+1, e.Location.Postcode*(rand.Intn(5)+1), times[j])
 			if err != nil {
 				log.Fatal(err)
 			}
