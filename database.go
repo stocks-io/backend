@@ -338,14 +338,16 @@ func mockData(database *sql.DB) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		numPositions := rand.Intn(20)
-		for j := 0; j < numPositions; j++ {
-			_, err = database.Exec("INSERT positions SET user_id = ?, symbol = ?, units = ?",
-				i+1, symbols[rand.Intn(len(symbols))], rand.Intn(30))
-			if err != nil {
-				log.Fatal(err)
+
+		for _, symbol := range symbols {
+			units := rand.Intn(20) + 1
+			if units%2 == 0 {
+				_, err = database.Exec("INSERT positions SET user_id = ?, symbol = ?, units = ?",
+					i+1, symbol, units)
+				checkFatalErr(err)
 			}
 		}
+
 		numOrderHistory := rand.Intn(50)
 		for j := 0; j < numOrderHistory; j++ {
 			_, err = database.Exec("INSERT order_history SET user_id = ?, symbol = ?, units = ?, price = ?, buy = ?, added = ?",
