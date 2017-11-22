@@ -108,5 +108,12 @@ func setupPortfolioRoutes() {
 				"page": fmt.Sprintf("/update/%s", c.Param("userID")),
 			})
 		})
+
+		portfolio.GET("/symbols", func(c *gin.Context) {
+			c.JSON(200, gin.H{
+				"count":   len(symbols),
+				"results": symbols,
+			})
+		})
 	}
 }

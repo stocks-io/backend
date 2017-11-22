@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 )
 
 type stocksResp struct {
@@ -33,6 +34,12 @@ type stocksResp struct {
 	YtdChange        float64 `json:"ytdChange"`
 }
 
+type symbolsResp []struct {
+	Symbol   string `json:"Symbol"`
+	Name     string `json:"Name"`
+	Industry string `json:"industry"`
+}
+
 func getStockPrice(symbol string) (float64, error) {
 	url := fmt.Sprintf("https://ws-api.iextrading.com/1.0/stock/%s/quote", symbol)
 	body, err := getResponse(url)
@@ -45,4 +52,13 @@ func getStockPrice(symbol string) (float64, error) {
 		return -1, err
 	}
 	return resp.LatestPrice, nil
+}
+
+func loadSymbols() symbolsResp {
+	body, err := ioutil.ReadFile("./companies.min.json")
+	checkFatalErr(err)
+	resp := symbolsResp{}
+	err = json.Unmarshal(body, &resp)
+	checkFatalErr(err)
+	return resp
 }

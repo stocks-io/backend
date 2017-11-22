@@ -12,6 +12,7 @@ import (
 var app *gin.Engine
 var db *sql.DB
 var mockDB *sql.DB
+var symbols symbolsResp
 var err error
 
 func main() {
@@ -25,6 +26,7 @@ func main() {
 		db = mockDB
 		log.Println("Using mock database!")
 	}
+	symbols = loadSymbols()
 	setupUserRoutes()
 	setupPortfolioRoutes()
 
