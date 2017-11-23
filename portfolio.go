@@ -17,6 +17,12 @@ type ownedRequest struct {
 	Token string `form:"token" json:"token" binding:"required"`
 }
 
+type stockHistoryRequest struct {
+	Token     string `form:"token" json:"token" binding:"required"`
+	Timeframe string `form:"timeframe" json:"timeframe" binding:"required"`
+	Symbol    string `form:"symbol" json:"symbol" binding:"required"`
+}
+
 func setupPortfolioRoutes() {
 	portfolio := app.Group("/portfolio")
 	{
@@ -113,6 +119,32 @@ func setupPortfolioRoutes() {
 			c.JSON(200, gin.H{
 				"count":   len(symbols),
 				"results": symbols,
+			})
+		})
+
+		portfolio.GET("/stockhistory", func(c *gin.Context) {
+			var req stockHistoryRequest
+			c.Bind(&req)
+			if req.Token == "" || req.Symbol == "" || req.Timeframe == "" {
+				c.JSON(401, gin.H{"message": "token, symbol, and timeframe are all required"})
+				return
+			}
+			userId := tokenToUserId(req.Token)
+			if userId == "" {
+				c.JSON(401, gin.H{"message": "Unauthorized"})
+				return
+			}
+			allHistory, err := getStockHistory(req.Symbol, req.Timeframe)
+			if err != nil {
+				c.JSON(403, gin.H{
+					"message": "getStockHistory failed",
+					"error":   err.Error(),
+				})
+				return
+			}
+			c.JSON(200, gin.H{
+				"count":   len(allHistory),
+				"results": allHistory,
 			})
 		})
 	}

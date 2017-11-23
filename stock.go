@@ -6,6 +6,12 @@ import (
 	"io/ioutil"
 )
 
+type symbolsResp []struct {
+	Symbol   string `json:"Symbol"`
+	Name     string `json:"Name"`
+	Industry string `json:"industry"`
+}
+
 type stocksResp struct {
 	AvgTotalVolume   int     `json:"avgTotalVolume"`
 	CalculationPrice string  `json:"calculationPrice"`
@@ -34,10 +40,28 @@ type stocksResp struct {
 	YtdChange        float64 `json:"ytdChange"`
 }
 
-type symbolsResp []struct {
-	Symbol   string `json:"Symbol"`
-	Name     string `json:"Name"`
-	Industry string `json:"industry"`
+type stockHistory struct {
+	Date             string  `json:"date"`
+	Open             float64 `json:"open"`
+	High             float64 `json:"high"`
+	Low              float64 `json:"low"`
+	Close            float64 `json:"close"`
+	Volume           int     `json:"volume"`
+	UnadjustedVolume int     `json:"unadjustedVolume"`
+	Change           float64 `json:"change"`
+	ChangePercent    float64 `json:"changePercent"`
+	Vwap             float64 `json:"vwap"`
+	Label            string  `json:"label"`
+	ChangeOverTime   float64 `json:"changeOverTime"`
+}
+
+func loadSymbols() symbolsResp {
+	body, err := ioutil.ReadFile("./companies.min.json")
+	checkFatalErr(err)
+	resp := symbolsResp{}
+	err = json.Unmarshal(body, &resp)
+	checkFatalErr(err)
+	return resp
 }
 
 func getStockPrice(symbol string) (float64, error) {
@@ -54,11 +78,16 @@ func getStockPrice(symbol string) (float64, error) {
 	return resp.LatestPrice, nil
 }
 
-func loadSymbols() symbolsResp {
-	body, err := ioutil.ReadFile("./companies.min.json")
-	checkFatalErr(err)
-	resp := symbolsResp{}
+func getStockHistory(symbol, timeframe string) ([]stockHistory, error) {
+	url := fmt.Sprintf("https://api.iextrading.com/1.0/stock/%s/chart/%s", symbol, timeframe)
+	body, err := getResponse(url)
+	resp := []stockHistory{}
+	if err != nil {
+		return resp, err
+	}
 	err = json.Unmarshal(body, &resp)
-	checkFatalErr(err)
-	return resp
+	if err != nil {
+		return resp, err
+	}
+	return resp, nil
 }
